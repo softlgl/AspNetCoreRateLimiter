@@ -9,6 +9,8 @@ namespace AspNetCoreRateLimiter
     {
         private readonly Dictionary<string, ILimiterService> limiters = new Dictionary<string, ILimiterService>();
 
+        public IEnumerable<string> AllPath => limiters.Keys;
+
         public ILimiterService this[string path]
         {
             get {
