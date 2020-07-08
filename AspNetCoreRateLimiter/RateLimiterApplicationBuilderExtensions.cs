@@ -11,7 +11,7 @@ namespace AspNetCoreRateLimiter
         {
             return builder.UseRateLimiter(async context=> {
                 context.Response.StatusCode=503;
-                await context.Response.WriteAsync("Server");
+                await context.Response.WriteAsync("Service Unavailable");
             });
         }
 
