@@ -23,7 +23,6 @@ namespace RateLimiterCore.LimiterService
                 {
                     return false;
                 }
-                _resetEvent.Set();
                 _bucket.Enqueue(new byte());
                 return true;
             }
@@ -49,7 +48,6 @@ namespace RateLimiterCore.LimiterService
                         {
                             _bucket.TryDequeue(out var _);
                         }
-                        _resetEvent.WaitOne();
                     }
                 }
                 stopwatch.Stop();

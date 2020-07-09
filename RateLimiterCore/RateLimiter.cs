@@ -3,6 +3,7 @@ using RateLimiterCore.LimiterService;
 
 namespace RateLimiterCore
 {
+    //https://www.cnblogs.com/yxlblogs/p/10435712.html
     public static class RateLimiter
     {
         /// <summary>
@@ -14,15 +15,12 @@ namespace RateLimiterCore
         /// <returns></returns>
         public static ILimiterService Create(LimiterType limiterType, int maxQPS, int limitSize)
         {
-            //https://www.cnblogs.com/yxlblogs/p/10435712.html
-            switch (limiterType)
+            return (limiterType) switch
             {
-                case LimiterType.TokenBucket:
-                default:
-                    return new TokenBucketLimiterService(maxQPS, limitSize);
-                case LimiterType.LeakageBucket:
-                    return new LeakageBucketLimiterService(maxQPS, limitSize);
-            }
+                LimiterType.TokenBucket => new TokenBucketLimiterService(maxQPS, limitSize),
+                LimiterType.LeakageBucket => new LeakageBucketLimiterService(maxQPS, limitSize),
+                _ => new TokenBucketLimiterService(maxQPS, limitSize)
+            };
         }
     }
 }

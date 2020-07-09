@@ -27,19 +27,11 @@ namespace RateLimiterCore.LimiterService
                 {
                     return false;
                 }
-                lock (_lock)
+                if (_bucket.TryDequeue(out var _))
                 {
-                    if (_bucket.Count <= 0)
-                    {
-                        return false;
-                    }
-                    if (_bucket.TryDequeue(out var _))
-                    {
-                        _resetEvent.Set();
-                        return true;
-                    }
-                    return false;
+                    return true;
                 }
+                return false;
             }
         }
 
@@ -57,10 +49,6 @@ namespace RateLimiterCore.LimiterService
                 stopwatch.Start();
                 lock (_lock)
                 {
-                    if (_bucket.Count >= _limitSize)
-                    {
-                        _resetEvent.WaitOne();
-                    }
                     _bucket.Enqueue(new byte());
                 }
                 stopwatch.Stop();

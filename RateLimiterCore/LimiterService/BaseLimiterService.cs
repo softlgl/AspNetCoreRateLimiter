@@ -11,7 +11,6 @@ namespace RateLimiterCore.LimiterService
         protected readonly int _limitSize;
         protected readonly Queue<byte> _bucket;
         protected readonly CancellationTokenSource _tokenSource;
-        protected readonly AutoResetEvent _resetEvent;
         protected volatile bool _disposed;
         protected readonly TimeSpan _timeSpan;
         protected readonly object _lock = new object();
@@ -22,7 +21,6 @@ namespace RateLimiterCore.LimiterService
             _limitSize = limitSize;
             _bucket = new Queue<byte>();
             _tokenSource = new CancellationTokenSource();
-            _resetEvent = new AutoResetEvent(false);
             if (_limitSize <= 0)
             {
                 _limitSize = 50;

@@ -7,6 +7,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RateLimiterCore", "RateLimi
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RateLimiterCore.Test", "RateLimiterCore.Test\RateLimiterCore.Test.csproj", "{1AB92455-F721-42C9-BCDA-FB452454BCC0}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{E1E3F4E7-CCE8-4EEF-9110-A8A03991634F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebTest", "WebTest\WebTest.csproj", "{08717282-E3D7-412F-B93F-E60498AEF400}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -25,5 +29,13 @@ Global
 		{1AB92455-F721-42C9-BCDA-FB452454BCC0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1AB92455-F721-42C9-BCDA-FB452454BCC0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1AB92455-F721-42C9-BCDA-FB452454BCC0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{08717282-E3D7-412F-B93F-E60498AEF400}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{08717282-E3D7-412F-B93F-E60498AEF400}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{08717282-E3D7-412F-B93F-E60498AEF400}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{08717282-E3D7-412F-B93F-E60498AEF400}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{1AB92455-F721-42C9-BCDA-FB452454BCC0} = {E1E3F4E7-CCE8-4EEF-9110-A8A03991634F}
+		{08717282-E3D7-412F-B93F-E60498AEF400} = {E1E3F4E7-CCE8-4EEF-9110-A8A03991634F}
 	EndGlobalSection
 EndGlobal
