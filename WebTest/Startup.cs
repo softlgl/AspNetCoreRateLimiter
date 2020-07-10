@@ -18,7 +18,7 @@ namespace WebTest
         {
             services.AddRateLimiter(new List<RateLimiterOptions>{
                 new RateLimiterOptions{
-                    LimiterType = LimiterType.TokenBucket,
+                    LimiterType = LimiterType.LeakageBucket,
                     LimitSize=1,
                     MaxQPS=1,
                     Path="/test"

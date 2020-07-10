@@ -43,12 +43,15 @@ namespace RateLimiterCore.LimiterService
                 sleep = 1;
             }
 
-            Stopwatch stopwatch = new Stopwatch();
             while (!_tokenSource.Token.IsCancellationRequested)
             {
-                stopwatch.Start();
+                Stopwatch stopwatch = Stopwatch.StartNew();
                 lock (_lock)
                 {
+                    if (_bucket.Count >= _limitSize)
+                    {
+                        continue;
+                    }
                     _bucket.Enqueue(new byte());
                 }
                 stopwatch.Stop();
@@ -65,13 +68,12 @@ namespace RateLimiterCore.LimiterService
                         {
                             if (_bucket.Count >= _limitSize)
                             {
-                                return;
+                                continue;
                             }
                             _bucket.Enqueue(new byte());
                         }
                     }
                 }
-                stopwatch.Reset();
             }
         }
     }
