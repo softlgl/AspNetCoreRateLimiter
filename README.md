@@ -46,6 +46,32 @@ public class Startup
     }
 }
 ```
+或使用配置的方式
+```json
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft": "Warning",
+      "Microsoft.Hosting.Lifetime": "Information"
+    }
+  },
+  "RateLimiterOptions": [
+    {
+      "LimiterType": 2,
+      "LimitSize": 1,
+      "MaxQPS": 1,
+      "Path": "/test"
+    }
+  ],
+  "AllowedHosts": "*"
+}
+```
+注册时候可以使用配置方式
+```csharp
+services.AddRateLimiter(_configuration.GetSection("RateLimiterOptions"));
+```
+
 #### .Net Core Console
 ```cs
 using (var limit = RateLimiter.Create(LimiterType.TokenBucket, 3, 5))
