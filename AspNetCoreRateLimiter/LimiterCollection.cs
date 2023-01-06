@@ -13,7 +13,8 @@ namespace AspNetCoreRateLimiter
 
         public ILimiterService this[string path]
         {
-            get {
+            get 
+            {
                 return Get(path);
             }
         }

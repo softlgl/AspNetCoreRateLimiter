@@ -13,7 +13,8 @@ namespace AspNetCoreRateLimiter
         private readonly RequestDelegate _callBack;
         private readonly LimiterCollection _limiterCollection;
         private readonly IEnumerable<string> _allPath;
-        public RateLimiterMiddleware(RequestDelegate next,LimiterCollection limiterCollection,RequestDelegate callBack)
+
+        public RateLimiterMiddleware(RequestDelegate next, LimiterCollection limiterCollection, RequestDelegate callBack)
         {
             _next = next;
             _limiterCollection = limiterCollection;
@@ -29,12 +30,14 @@ namespace AspNetCoreRateLimiter
                 await _next(context);
                 return;
             }
+
             ILimiterService limiterService = _limiterCollection[path];
             if (limiterService.Acquire())
             {
                 await _next(context);
                 return;
             }
+            
             await _callBack(context);
         }
     }

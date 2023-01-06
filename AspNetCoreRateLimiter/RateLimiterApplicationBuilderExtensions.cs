@@ -15,7 +15,7 @@ namespace AspNetCoreRateLimiter
             });
         }
 
-        public static IApplicationBuilder UseRateLimiter(this IApplicationBuilder builder,RequestDelegate requestDelegate)
+        public static IApplicationBuilder UseRateLimiter(this IApplicationBuilder builder, RequestDelegate requestDelegate)
         {
             return builder.UseMiddleware<RateLimiterMiddleware>(requestDelegate);
         }
