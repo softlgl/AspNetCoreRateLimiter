@@ -1,5 +1,4 @@
-﻿using System;
-using System.Linq;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
@@ -24,21 +23,26 @@ namespace AspNetCoreRateLimiter
 
         public async Task InvokeAsync(HttpContext context)
         {
-            string path = _allPath.FirstOrDefault(i => context.Request.Path.Value.Contains(i));
-            if (string.IsNullOrEmpty(path))
+            foreach (string path in _allPath)
             {
-                await _next(context);
-                return;
+                // 按路径段前缀匹配（大小写不敏感）：
+                // 配置 /test 命中 /test 与 /test/limiter，但不会命中 /contest 或 /testxxx
+                if (context.Request.Path.StartsWithSegments(path))
+                {
+                    ILimiterService limiterService = _limiterCollection[path];
+                    if (limiterService.Acquire())
+                    {
+                        await _next(context);
+                    }
+                    else
+                    {
+                        await _callBack(context);
+                    }
+                    return;
+                }
             }
 
-            ILimiterService limiterService = _limiterCollection[path];
-            if (limiterService.Acquire())
-            {
-                await _next(context);
-                return;
-            }
-            
-            await _callBack(context);
+            await _next(context);
         }
     }
 }

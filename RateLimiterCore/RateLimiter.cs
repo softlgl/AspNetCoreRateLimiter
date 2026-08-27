@@ -15,7 +15,7 @@ namespace RateLimiterCore
         /// <returns></returns>
         public static ILimiterService Create(LimiterType limiterType, int maxQPS, int limitSize)
         {
-            return (limiterType) switch
+            return limiterType switch
             {
                 LimiterType.TokenBucket => new TokenBucketLimiterService(maxQPS, limitSize),
                 LimiterType.LeakageBucket => new LeakageBucketLimiterService(maxQPS, limitSize),
