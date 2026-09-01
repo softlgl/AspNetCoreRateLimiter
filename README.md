@@ -6,6 +6,7 @@
 - 通过中间件对请求按**路径前缀**限流，命中即限流，不命中直接放行
 - 核心算法基于"时间戳懒计算"实现：**无后台线程、无锁、无队列**，性能高
 - 支持三种注册方式：单条规则、规则列表、配置文件
+- **时钟回跳自愈**：VM 在线迁移、容器暂停恢复等导致计时器后退时，自动恢复限流能力，不会长时间拒绝全部请求
 
 ## 参数说明
 `RateLimiterOptions` 各字段含义：
@@ -14,18 +15,25 @@
 | --- | --- |
 | `Path` | 限流的路径前缀，如 `/test`（匹配规则见下文） |
 | `LimiterType` | 限流算法：`1 = 令牌桶 TokenBucket`，`2 = 漏桶 LeakageBucket` |
-| `MaxQPS` | 每秒放行速率（capacity），值越大放行越快 |
-| `LimitSize` | 桶容量，即最多允许的**突发请求数** |
+| `MaxQPS` | 每秒放行速率，值越大放行越快 |
+| `LimitSize` | 桶容量，即最多允许的**突发请求数**。仅对令牌桶生效，漏桶不使用该值 |
 
 > 若 `MaxQPS <= 0` 会被钳制为 `1`；若 `LimitSize <= 0` 会被钳制为 `50`。
+>
+> 同时存在上界，超出会抛 `ArgumentOutOfRangeException`（避免配置错误导致限流静默失效）：
+> - `MaxQPS` 不得超过 `Stopwatch.Frequency`——再高的速率无法被计时器分辨；
+> - `LimitSize` 不得超过 `3600 × MaxQPS`——即突发窗口上限为 1 小时。
 
 ## 限流行为
 - **非阻塞拒绝模式**：超限时不排队、而是立即拒绝该请求（默认返回 `503`，可自定义）。
+- 被拒时响应会带上 `Retry-After` 头（整数秒，至少 1 秒），客户端可据此退避重试。
 - 两种算法的差异体现在**是否允许突发**：
   - **令牌桶（允许突发）**：启动后立即允许 `LimitSize` 次突发请求，空闲会重新攒满突发头寸，之后按 `MaxQPS` 持续放行。
     - 示例：`MaxQPS=1, LimitSize=1` 表示启动后第一个请求放行，下一秒内继续放行 1 个，其余被拒。
   - **漏桶（严格匀速）**：不保留突发头寸，请求按恒定节拍均速放行——两次放行严格间隔 `1/MaxQPS` 秒，空闲不攒突发、同一瞬间只放行一个，过载时无尖峰。
 - 二者均采用"时间戳懒计算"：**无后台线程、无锁、无队列**，性能高。
+- 两种算法的突发额度都**严格封顶在 `LimitSize`**：闲置再久也只能攒满一个桶，不会攒出无上限的突发。
+- 若计时器发生回跳（VM 在线迁移、容器暂停恢复等），水位领先量超出合理范围时会自动拉回当前时间自愈，避免长时间拒绝全部请求。
 
 ## 路径匹配规则
 中间件使用 `StartsWithSegments` 做**前缀段匹配**（大小写不敏感）：
@@ -34,7 +42,8 @@
 | --- | --- | --- |
 | `/test` | `/test`、`/test/limiter`、`/Test/x` | `/testxxx`、`/contest` |
 
-- 命中**首个**匹配路径后即停止匹配，使用该路径对应的限流器。
+- 多条规则同时命中时，采用**最长前缀优先**：`/api/private` 会优先于 `/api` 生效，与注册顺序无关。
+- 命中即停止匹配，只扣减该路径对应限流器的一次额度；被拒后不会回退到更宽松的规则。
 - 所有路径都未命中时直接放行。
 
 ## 使用方式
@@ -100,15 +109,21 @@ app.UseEndpoints(endpoints =>
 
 ### .NET Core Console（非 Web 场景）
 ```cs
-using (var limit = RateLimiter.Create(LimiterType.TokenBucket, 3, 5))
+var limit = RateLimiter.Create(LimiterType.TokenBucket, 3, 5);
+
+// 消耗 1 个令牌（默认）
+if (limit.Acquire())
 {
-    if (limit.Acquire())
-    {
-        Console.WriteLine("获取成功");
-    }
-    else
-    {
-        Console.WriteLine("获取失败");
-    }
+    Console.WriteLine("获取成功");
 }
+else
+{
+    Console.WriteLine($"获取失败，建议 {limit.TimeUntilNextSlot().TotalSeconds:F1}s 后重试");
+}
+
+// 也可一次消耗多个令牌：额度不足时直接失败，不会超发
+// permits 不得超过 LimitSize——索取超过整个桶的额度没有意义
+limit.Acquire(3);
 ```
+
+> `ILimiterService` 不持有任何非托管资源，无需 `Dispose`。实现是线程安全的，通常按路径注册为单例共享。
