@@ -407,6 +407,24 @@ namespace RateLimiterCore.Test
         [Theory]
         [InlineData(LimiterType.TokenBucket)]
         [InlineData(LimiterType.LeakageBucket)]
+        public void 回跳量刚超合法上界时_仍应自愈_而非等到追平(LimiterType type)
+        {
+            // maxQPS=4（周期 0.25 秒）、容量 5：
+            //   令牌桶合法领先上界 = 突发窗口 + 1 周期 = 1.25 秒；漏桶 = 容量·周期 = 1.25 秒
+            // 领先 2 秒必然是时钟回跳。旧实现取"两种算法上界之和"（令牌桶 = 2.25 秒），
+            // 该场景不会自愈，请求要被拒约 2 秒直到 now 追上水位。
+            var limiter = RateLimiter.Create(type, 4, 5);
+
+            SetWatermark(limiter, Stopwatch.GetTimestamp() + Stopwatch.Frequency * 2);
+
+            Assert.True(limiter.Acquire());
+            // 自愈后等待时间回到单个周期量级，而不是"再等约 2 秒"
+            Assert.True(limiter.TimeUntilNextSlot() < TimeSpan.FromSeconds(1));
+        }
+
+        [Theory]
+        [InlineData(LimiterType.TokenBucket)]
+        [InlineData(LimiterType.LeakageBucket)]
         public void 高并发下_变化的permits_不会被误判为时钟回跳(LimiterType type)
         {
             const int maxQPS = 100;

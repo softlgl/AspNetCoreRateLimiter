@@ -11,7 +11,7 @@ namespace RateLimiterCore.LimiterService
     /// 的行为没有任何影响，仅作为配置值保留在 <see cref="BaseLimiterService.LimitSize"/> 供诊断。
     /// 需要突发能力请改用 <see cref="TokenBucketLimiterService"/>。
     /// </summary>
-    public class LeakageBucketLimiterService : BaseLimiterService, ILimiterService
+    public sealed class LeakageBucketLimiterService : BaseLimiterService, ILimiterService
     {
         public LeakageBucketLimiterService(int maxQPS, int limitSize)
             : base(maxQPS, limitSize, allowBurst: false)

@@ -76,10 +76,17 @@ namespace RateLimiterCore.LimiterService
             _limitSize = limitSize > 0 ? limitSize : 50;
             _burstTicks = allowBurst ? (_limitSize - 1) * _periodTicks : 0L;
             _allowBurst = allowBurst;
-            // 放行瞬间水位相对 now 的领先量上界：
-            //   令牌桶 = 突发窗口 + 1 个周期；漏桶 = 本次步进（步进 ≤ 容量个周期）
-            // 取两者上界之和，任何合法调用都不会越界，越界即说明时钟发生回跳
-            _maxLeadTicks = _burstTicks + _periodTicks * _limitSize;
+            // 放行瞬间水位相对 now 的领先量上界，按算法各自推导并取最紧值：
+            //   令牌桶：放行前 effective - now ≤ 突发窗口 - (permits-1)·周期，放行后加 permits·周期，
+            //           合并后上界 = 突发窗口 + 1 个周期（与 permits 无关）；
+            //   漏桶：每次放行水位至多推后 permits·周期 ≤ 容量·周期。
+            // 阈值越紧，自愈盲区越小——回跳量只要超过真实上界即触发自愈；
+            // 若取两种算法上界之和（旧实现），令牌桶在回跳量落于 (突发窗口+1周期, 两者之和]
+            // 区间时不会自愈，期间请求被拒直到 now 追上水位。
+            // 注意判定用严格大于：恰好等于上界的合法放行不会被误判。
+            _maxLeadTicks = allowBurst
+                ? _burstTicks + _periodTicks
+                : _periodTicks * _limitSize;
             // 初始水位设为当前时间：令牌桶由此获得 limitSize 次初始突发
             _watermarkTicks = Stopwatch.GetTimestamp();
         }
@@ -96,6 +103,10 @@ namespace RateLimiterCore.LimiterService
             {
                 throw new ArgumentOutOfRangeException(nameof(permits), permits, "permits 必须为正数。");
             }
+            // 注意：permits ≤ 桶容量这条约束同时是时钟回跳判定的前提——
+            // _maxLeadTicks 按"单次步进 ≤ 容量·周期"推导，一旦放宽本校验，
+            // 放行后的领先量可能越过 _maxLeadTicks，正常请求会被误判为时钟回跳。
+            // 若将来允许某个算法索取超过桶容量，必须同步重算 _maxLeadTicks。
             if (permits > _limitSize)
             {
                 throw new ArgumentOutOfRangeException(nameof(permits), permits,
